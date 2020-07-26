@@ -93,6 +93,17 @@ fileBackend: ""
   #
   # or separated file from configFiles
   # filename = "/configs/rules.toml"
+  debug = true
+  logLevel = "DEBUG"
+  defaultEntryPoints = ["http","https"]
+
+  [entryPoints]
+  [entryPoints.http]
+  address = ":80"
+  [entrypoints.http.auth.forward]
+  address = "http://auth.ory.svc.cluster.local:3000/traefik"
+
+
 
 proxyProtocol:
   enabled: false
