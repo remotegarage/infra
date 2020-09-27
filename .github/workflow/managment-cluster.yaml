@@ -3,14 +3,13 @@ name: Build and Deploy to GKE
 on:
   push:
     branches:
-    - master
+      - master
 
 env:
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: cluster-1    
-  GKE_ZONE: us-central1-c   
-  DEPLOYMENT_NAME: gke-test 
-  IMAGE: static-site
+#  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+#  GKE_CLUSTER: cluster-1
+#  GKE_ZONE: us-central1-c
+#  DEPLOYMENT_NAME: gke-test
 
 jobs:
   setup-build-publish-deploy:
@@ -18,28 +17,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    # Setup gcloud CLI
-    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-      with:
-        version: '290.0.1'
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ secrets.GKE_PROJECT }}
+      # # Setup gcloud CLI
+      # - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      #   with:
+      #     version: '290.0.1'
+      #     service_account_key: ${{ secrets.GKE_SA_KEY }}
+      #     project_id: ${{ secrets.GKE_PROJECT }}
 
-    # Configure Docker to use the gcloud command-line tool as a credential
-    # helper for authentication
-    - run: |-
-        gcloud --quiet auth configure-docker
-    # Get the GKE credentials so we can deploy to the cluster
-    - run: |-
-        gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
-    # Set up kustomize
-    - name: Set up Kustomize
-      run: |-
-        curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
-        chmod u+x ./kustomize
+      # # Configure Docker to use the gcloud command-line tool as a credential
+      # # helper for authentication
+      # - run: |-
+      #     gcloud --quiet auth configure-docker
+      # # Get the GKE credentials so we can deploy to the cluster
+      # - run: |-
+      #     gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
 
-#TODO : 
-# Deploy capi component 
+      # Create Kubernetes Cluster
+      - uses: engineerd/setup-kind@v0.4.0
+
+      - uses: evalsocket/cluster-api-action/cluster-api@master
+        with:
+          kubeconfig: ${KUBECONFIG}
+          capi-provider: 'aws'
+          capi-provider-version: 'v0.6.0'
+          capi-version : 'v0.3.9'
+          secret: 'YXNkYmhqdmFz'
+        id: capi-aws
+      - run: |-
+          kubectl apply -f cluster/aws-provider
